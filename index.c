@@ -125,6 +125,12 @@ int index_status(const Index *index) {
     return 0;
 }
 
+// helper function to compare index entries
+static int compare_index_entries(const void *a, const void *b) {
+    return strcmp(((const IndexEntry *)a)->path,
+                  ((const IndexEntry *)b)->path);
+}
+
 // ─── TODO: Implement these ───────────────────────────────────────────────────
 
 // Load the index from .pes/index.
@@ -134,11 +140,41 @@ int index_status(const Index *index) {
 //   - hex_to_hash                      : converting the parsed string to ObjectID
 //
 // Returns 0 on success, -1 on error.
+
 int index_load(Index *index) {
-    // TODO: Implement index loading
-    // (See Lab Appendix for logical steps)
-    (void)index;
-    return -1;
+    if (!index) return -1;
+
+    index->count = 0;
+
+    FILE *fp = fopen(".pes/index", "r");
+    if (!fp) {
+        // No index yet → empty index (NOT error)
+        return 0;
+    }
+
+    while (index->count < MAX_INDEX_ENTRIES) {
+        IndexEntry *e = &index->entries[index->count];
+
+        char hex[HASH_HEX_SIZE + 1];
+
+        int rc = fscanf(fp, "%o %64s %llu %u %511s\n", &e->mode, hex, &e->mtime_sec,&e->size,e->path);
+
+        if (rc == EOF) break;
+        if (rc != 5) {
+            fclose(fp);
+            return -1;
+        }
+
+        if (hex_to_hash(hex, &e->hash) < 0) {
+            fclose(fp);
+            return -1;
+        }
+
+        index->count++;
+    }
+
+    fclose(fp);
+    return 0;
 }
 
 // Save the index to .pes/index atomically.
@@ -151,11 +187,10 @@ int index_load(Index *index) {
 //   - rename                           : atomically moving the temp file over the old index
 //
 // Returns 0 on success, -1 on error.
+
+
 int index_save(const Index *index) {
-    // TODO: Implement atomic index saving
-    // (See Lab Appendix for logical steps)
-    (void)index;
-    return -1;
+    
 }
 
 // Stage a file for the next commit.
