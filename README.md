@@ -376,7 +376,10 @@ The test program verifies:
 
 **📸 Screenshot 1A:** Output of `./test_objects` showing all tests passing.
 
+![image1](images/image1)
+
 **📸 Screenshot 1B:** `find .pes/objects -type f` showing the sharded directory structure.
+![image2](images/image2)
 
 ---
 
@@ -408,7 +411,10 @@ The test program verifies:
 
 **📸 Screenshot 2A:** Output of `./test_tree` showing all tests passing.
 
+![image3](images/image3)
+
 **📸 Screenshot 2B:** Pick a tree object from `find .pes/objects -type f` and run `xxd .pes/objects/XX/YYY... | head -20` to show the raw binary format.
+![image4](images/image4)
 
 ---
 
@@ -465,8 +471,10 @@ cat .pes/index    # Human-readable text format
 ```
 
 **📸 Screenshot 3A:** Run `./pes init`, `./pes add file1.txt file2.txt`, `./pes status` — show the output.
+![image5](images/image5)
 
 **📸 Screenshot 3B:** `cat .pes/index` showing the text-format index with your entries.
+![image6](images/image6)
 
 ---
 
@@ -516,11 +524,14 @@ make test-integration
 ```
 
 **📸 Screenshot 4A:** Output of `./pes log` showing three commits with hashes, authors, timestamps, and messages.
+![image7](images/image7)
 
 **📸 Screenshot 4B:** `find .pes -type f | sort` showing object store growth after three commits.
+![image8](images/image8)
 
 **📸 Screenshot 4C:** `cat .pes/refs/heads/main` and `cat .pes/HEAD` showing the reference chain.
 
+![image9](images/image9)
 ---
 
 ## Phase 5 & 6: Analysis-Only Questions
