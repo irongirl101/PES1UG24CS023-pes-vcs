@@ -119,6 +119,24 @@ int write_all(int fd, const void *buf,size_t count){
 
 int object_write(ObjectType type, const void *data, size_t len, ObjectID *id_out) {
 	const char *type_str = type_to_str(type);
+    int object_write(ObjectType type, const void *data, size_t len, ObjectID *id_out) {
+    const char *type_str = type_to_str(type);
+    if (!type_str || !data || !id_out) return -1;
+
+    // 1. build header
+    char header[64];
+    int header_len = snprintf(header, sizeof(header), "%s %zu", type_str, len) + 1;
+
+    size_t full_len = header_len + len;
+    char *full_obj = malloc(full_len);
+    if (!full_obj) return -1;
+
+    memcpy(full_obj, header, header_len);
+    memcpy(full_obj + header_len, data, len);
+
+    // 2. compute hash
+    char hash[HASH_HEX_SIZE];
+    compute_hash(full_obj, full_len, hash);
 }
 // Read an object from the store.
 //
