@@ -244,7 +244,7 @@ int object_read(const ObjectID *id, ObjectType *type_out, void **data_out, size_
         fclose(fp);
         return -1;
     }
-    
+
     char *buf = malloc(file_size);
     if (!buf) {
         fclose(fp);
@@ -257,5 +257,32 @@ int object_read(const ObjectID *id, ObjectType *type_out, void **data_out, size_
         return -1;
     }
     fclose(fp);
+
+    // 3. find header
+    void *null_pos = memchr(buf, '\0', file_size);
+    if (!null_pos) { // if corrupt
+        free(buf);
+        return -1;
+    }
+
+    size_t header_len = (char *)null_pos - buf;
+    char *data_start = (char *)null_pos + 1;
+    size_t data_len = file_size - header_len - 1;
+
+    // parse header <type><size>
+    char type_str[16];
+    size_t declared_size;
+
+    if (sscanf(buf, "%15s %zu", type_str, &declared_size) != 2) {
+        free(buf);
+        return -1;
+    }
+
+    // corruption 
+    if (declared_size != data_len) {
+        free(buf);
+        return -1; 
+    }
+    
 }
 
