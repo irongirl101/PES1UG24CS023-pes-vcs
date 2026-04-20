@@ -190,7 +190,43 @@ int index_load(Index *index) {
 
 
 int index_save(const Index *index) {
-    
+    if (!index) return -1;
+
+    mkdir(".pes", 0755);
+
+    // Copy + sort
+    Index sorted = *index;
+    qsort(sorted.entries, sorted.count, sizeof(IndexEntry), compare_index_entries);
+
+    char temp_path[] = ".pes/index.tmpXXXXXX";
+    int fd = mkstemp(temp_path);
+    if (fd < 0) return -1;
+
+    FILE *fp = fdopen(fd, "w");
+    if (!fp) {
+        close(fd);
+        return -1;
+    }
+
+    for (int i = 0; i < sorted.count; i++) {
+        const IndexEntry *e = &sorted.entries[i];
+
+        char hex[HASH_HEX_SIZE + 1];
+        hash_to_hex(&e->hash, hex);
+
+        fprintf(fp, "%o %s %llu %u %s\n",e->mode,hex,e->mtime_sec,e->size,e->path);
+    }
+
+    fflush(fp);
+    fsync(fileno(fp));
+    fclose(fp);
+
+    if (rename(temp_path, ".pes/index") < 0) {
+        unlink(temp_path);
+        return -1;
+    }
+
+    return 0;
 }
 
 // Stage a file for the next commit.
