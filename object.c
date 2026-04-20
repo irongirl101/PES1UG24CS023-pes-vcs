@@ -283,6 +283,38 @@ int object_read(const ObjectID *id, ObjectType *type_out, void **data_out, size_
         free(buf);
         return -1; 
     }
-    
+
+     // 4. verifying hash
+    char computed_hash[HASH_HEX_SIZE];
+    compute_hash(buf, file_size, computed_hash);
+
+    if (memcmp(computed_hash, id->hex, HASH_HEX_SIZE - 1) != 0) {
+        free(buf);
+        return -1; 
+    }
+
+    // 5. setting type
+    ObjectType type = str_to_type(type_str);
+    if (type == -1) {
+        free(buf);
+        return -1;
+    }
+
+    *type_out = type;
+
+    // 6. alloc and copy data 
+    void *data = malloc(data_len);
+    if (!data) {
+        free(buf);
+        return -1;
+    }
+
+    memcpy(data, data_start, data_len);
+
+    *data_out = data;
+    *len_out = data_len;
+
+    free(buf);
+    return 0;
 }
 
