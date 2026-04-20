@@ -1,6 +1,6 @@
 **Screenshot 1A:** Output of `./test_objects` showing all tests passing.
 
-![image1](images/image1)
+![image1](./images/image1)
 
 **Screenshot 1B:** `find .pes/objects -type f` showing the sharded directory structure.
 
@@ -19,12 +19,15 @@
 **Screenshot 3B:** `cat .pes/index` showing the text-format index with your entries.
 
 **Screenshot 4A:** Output of `./pes log` showing three commits with hashes, authors, timestamps, and messages.
+
 ![image7](images/image7)
 
 **Screenshot 4B:** `find .pes -type f | sort` showing object store growth after three commits.
+
 ![image8](images/image8)
 
 **Screenshot 4C:** `cat .pes/refs/heads/main` and `cat .pes/HEAD` showing the reference chain.
+
 ![image9](images/image9)
 
 #
