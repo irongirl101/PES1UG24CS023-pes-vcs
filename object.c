@@ -226,6 +226,23 @@ static ObjectType str_to_type(const char *type_str) {
 }
 
 int object_read(const ObjectID *id, ObjectType *type_out, void **data_out, size_t *len_out) {
+    if (!id || !type_out || !data_out || !len_out) return -1;
 
+     // 1. build path
+    char path[512];
+    if (object_path(id, path, sizeof(path)) < 0) return -1;
+
+    // 2. open and read entire file
+    FILE *fp = fopen(path, "rb");
+    if (!fp) return -1;
+
+    fseek(fp, 0, SEEK_END);
+    long file_size = ftell(fp);
+    rewind(fp);
+
+    if (file_size <= 0) {
+        fclose(fp);
+        return -1;
+    }
 }
 
