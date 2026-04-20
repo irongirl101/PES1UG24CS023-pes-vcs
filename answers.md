@@ -14,8 +14,20 @@
 
 ![image4](images/image4)
 
+**Screenshot 3A:** Run `./pes init`, `./pes add file1.txt file2.txt`, `./pes status` — show the output.
 
+**Screenshot 3B:** `cat .pes/index` showing the text-format index with your entries.
 
+**Screenshot 4A:** Output of `./pes log` showing three commits with hashes, authors, timestamps, and messages.
+![image7](images/image7)
+
+**Screenshot 4B:** `find .pes -type f | sort` showing object store growth after three commits.
+![image8](images/image8)
+
+**Screenshot 4C:** `cat .pes/refs/heads/main` and `cat .pes/HEAD` showing the reference chain.
+![image9](images/image9)
+
+#
 
 **Q5.1:** A branch in Git is just a file in `.git/refs/heads/` containing a commit hash. Creating a branch is creating a file. Given this, how would you implement `pes checkout <branch>` — what files need to change in `.pes/`, and what must happen to the working directory? What makes this operation complex?
 
