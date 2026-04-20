@@ -109,8 +109,8 @@ const char *type_to_str(ObjectType type) {
 int write_all(int fd, const void *buf,size_t count){
 	const char *p = buf;
 	while(count>0){
-		sszie_t n = write(fd,p,count);
-		if(n<=0) return -1l
+		ssize_t n = write(fd,p,count);
+		if(n<=0) return -1;
 		p+=nl
 		count-=n;
 	}
