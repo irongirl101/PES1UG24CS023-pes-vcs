@@ -244,5 +244,18 @@ int object_read(const ObjectID *id, ObjectType *type_out, void **data_out, size_
         fclose(fp);
         return -1;
     }
+    
+    char *buf = malloc(file_size);
+    if (!buf) {
+        fclose(fp);
+        return -1;
+    }
+
+    if (fread(buf, 1, file_size, fp) != (size_t)file_size) {
+        fclose(fp);
+        free(buf);
+        return -1;
+    }
+    fclose(fp);
 }
 
