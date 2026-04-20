@@ -138,18 +138,48 @@ int object_write(ObjectType type, const void *data, size_t len, ObjectID *id_out
     char hash[HASH_HEX_SIZE];
     compute_hash(full_obj, full_len, hash);
 
-    // 3. Deduplication
+    // 3. deduplication
     if (object_exists(hash)) {
         strcpy(id_out->hex, hash);
         free(full_obj);
         return 0;
     }
-    
-    // 4. Create shard directory
+
+    // 4. create shard dir
     char dir[256];
     snprintf(dir, sizeof(dir), ".pes/objects/%.2s", hash);
     mkdir(dir, 0755); // ignore if exists
+
+    // 5. temp file
+    char temp_path[512];
+    snprintf(temp_path, sizeof(temp_path), "%s/tmp_XXXXXX", dir);
+    int fd = mkstemp(temp_path);
+    if (fd < 0) {
+        free(full_obj);
+        return -1;
+    }
+
+    // 6. write + fsync
+    if (write_all(fd, full_obj, full_len) < 0 || fsync(fd) < 0) {
+        close(fd);
+        unlink(temp_path);
+        free(full_obj);
+        return -1;
+    }
+
+    close(fd);
+
+    // 7. final path
+    char final_path[512];
+    snprintf(final_path, sizeof(final_path), "%s/%s", dir, hash + 2);
+
+    if (rename(temp_path, final_path) < 0) {
+        unlink(temp_path);
+        free(full_obj);
+        return -1;
+    }
 }
+
 // Read an object from the store.
 //
 // Steps:
