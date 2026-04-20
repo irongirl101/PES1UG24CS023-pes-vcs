@@ -230,7 +230,7 @@ Back to Thread 1:
 Updates branch → now points to commit
 But objects are gone
 
-👉 Repo is corrupted
+Repo is corrupted
 
 Why this happens
 
