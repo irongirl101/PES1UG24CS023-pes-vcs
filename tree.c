@@ -214,8 +214,11 @@ static int build_tree(IndexEntry *entries, int count, ObjectID *id_out) {
 }
 
 
-
-
 int tree_from_index(ObjectID *id_out) {
+if (!id_out) return -1;
 
+    Index index;
+    if (index_load(&index) < 0) return -1;
+
+    return build_tree(index.entries, index.count, id_out);
 }
