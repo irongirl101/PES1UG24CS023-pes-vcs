@@ -16,7 +16,7 @@
 #include <dirent.h>
 #include <sys/stat.h>
 #include "pes.h"
-#include "index.h"
+
 
 int object_write(ObjectType type, const void *data, size_t len, ObjectID *id_out);
 
@@ -136,73 +136,69 @@ int tree_serialize(const Tree *tree, void **data_out, size_t *len_out) {
 // Returns 0 on success, -1 on error.
 
 // Recursive Helper Function 
-static int build_tree(IndexEntry *entries, int count, ObjectID *id_out) {
+static int build_tree_fs(const char *base, ObjectID *id_out) {
+    DIR *dir = opendir(base);
+    if (!dir) return -1;
+
     Tree tree;
     tree.count = 0;
 
-    for (int i = 0; i < count; ) {
-        char *path = entries[i].path;
-        char *slash = strchr(path, '/');
+    struct dirent *entry;
 
-        if (!slash) {
-            // ---- FILE ----
-            TreeEntry *te = &tree.entries[tree.count++];
+    while ((entry = readdir(dir)) != NULL) {
+        if (strcmp(entry->d_name, ".") == 0 ||
+            strcmp(entry->d_name, "..") == 0 ||
+            strcmp(entry->d_name, ".pes") == 0)
+            continue;
 
-            te->mode = entries[i].mode;
-            strcpy(te->name, path);
-            te->hash = entries[i].hash;
+        char path[512];
+        snprintf(path, sizeof(path), "%s/%s", base, entry->d_name);
 
-            i++;
-        } else {
-            // ---- DIRECTORY ----
-            char dirname[256];
-            size_t len = slash - path;
+        struct stat st;
+        if (stat(path, &st) < 0) continue;
 
-            strncpy(dirname, path, len);
-            dirname[len] = '\0';
+        TreeEntry *te = &tree.entries[tree.count++];
 
-            // Collect entries belonging to this directory
-            IndexEntry subentries[MAX_INDEX_ENTRIES];
-            int subcount = 0;
-
-            for (int j = i; j < count; j++) {
-                if (strncmp(entries[j].path, dirname, len) == 0 &&
-                    entries[j].path[len] == '/') {
-
-                    IndexEntry sub = entries[j];
-
-                    // Strip "dirname/"
-                    memmove(sub.path,
-                            sub.path + len + 1,
-                            strlen(sub.path) - len);
-
-                    subentries[subcount++] = sub;
-                }
-            }
-
-            // Recursive build
+        if (S_ISDIR(st.st_mode)) {
             ObjectID sub_id;
-            if (build_tree(subentries, subcount, &sub_id) < 0)
+            if (build_tree_fs(path, &sub_id) < 0) {
+                closedir(dir);
                 return -1;
-
-            // Add directory entry
-            TreeEntry *te = &tree.entries[tree.count++];
-            te->mode = MODE_DIR;
-            strcpy(te->name, dirname);
-            te->hash = sub_id;
-
-            // Skip processed entries
-            while (i < count &&
-                   strncmp(entries[i].path, dirname, len) == 0 &&
-                   entries[i].path[len] == '/') {
-                i++;
             }
+
+            te->mode = MODE_DIR;
+            strcpy(te->name, entry->d_name);
+            te->hash = sub_id;
+        } else {
+            // read file → blob
+            FILE *fp = fopen(path, "rb");
+            if (!fp) continue;
+
+            fseek(fp, 0, SEEK_END);
+            long size = ftell(fp);
+            rewind(fp);
+
+            void *buf = malloc(size);
+            fread(buf, 1, size, fp);
+            fclose(fp);
+
+            if (object_write(OBJ_BLOB, buf, size, &te->hash) < 0) {
+                free(buf);
+                closedir(dir);
+                return -1;
+            }
+
+            free(buf);
+
+            te->mode = (st.st_mode & S_IXUSR) ? MODE_EXEC : MODE_FILE;
+            strcpy(te->name, entry->d_name);
         }
     }
 
-    // Serialize and write tree object
-    void *data = NULL;
-    size_t len = 0;
+    closedir(dir);
+
+    void *data;
+    size_t len;
 
     if (tree_serialize(&tree, &data, &len) < 0)
         return -1;
@@ -213,12 +209,6 @@ static int build_tree(IndexEntry *entries, int count, ObjectID *id_out) {
     return rc;
 }
 
-
 int tree_from_index(ObjectID *id_out) {
-if (!id_out) return -1;
-
-    Index index;
-    if (index_load(&index) < 0) return -1;
-
-    return build_tree(index.entries, index.count, id_out);
+    return build_tree_fs(".", id_out);
 }
