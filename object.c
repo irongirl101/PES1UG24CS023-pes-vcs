@@ -117,6 +117,8 @@ int object_write(ObjectType type, const void *data, size_t len, ObjectID *id_out
     ObjectID id;
     compute_hash(full, total_len, &id);
 
+    char hex[HASH_HEX_SIZE + 1];
+    hash_to_hex(&id, hex);
     if (id_out) *id_out = id;
 
     // 3. deduplication
