@@ -15,6 +15,7 @@
 // PROVIDED functions: index_find, index_remove, index_status
 // TODO functions:     index_load, index_save, index_add
 
+
 #include "index.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -25,7 +26,9 @@
 #include <dirent.h>
 
 
+
 int object_write(ObjectType type, const void *data, size_t len, ObjectID *id_out);
+
 
 // ─── PROVIDED ────────────────────────────────────────────────────────────────
 
@@ -243,41 +246,43 @@ int index_save(const Index *index) {
 // Returns 0 on success, -1 on error.
 
 int index_add(Index *index, const char *path) {
-   if (!index || !path) return -1;
+    if (!index || !path) return -1;
+
+    Index temp;
+    if (index_load(&temp) < 0) return -1;
+    *index = temp;
+
+    if (index->count < 0 || index->count > MAX_INDEX_ENTRIES)
+        index->count = 0;
 
     struct stat st;
     if (stat(path, &st) != 0) return -1;
-
-    // only reg files
     if (!S_ISREG(st.st_mode)) return -1;
 
-    // reads file 
     FILE *fp = fopen(path, "rb");
     if (!fp) return -1;
 
-    void *buf = malloc(st.st_size);
+    size_t size = st.st_size;
+    void *buf = malloc(size ? size : 1);
     if (!buf) {
         fclose(fp);
         return -1;
     }
 
-    if (fread(buf, 1, st.st_size, fp) != (size_t)st.st_size) {
+    if (fread(buf, 1, size, fp) != size) {
         fclose(fp);
         free(buf);
         return -1;
     }
     fclose(fp);
 
-    // write blob
     ObjectID id;
-    if (object_write(OBJ_BLOB, buf, st.st_size, &id) < 0) {
+    if (object_write(OBJ_BLOB, buf, size, &id) < 0) {
         free(buf);
         return -1;
     }
-
     free(buf);
 
-    // check if it already exists 
     IndexEntry *e = index_find(index, path);
 
     if (!e) {
