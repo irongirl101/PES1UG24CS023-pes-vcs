@@ -93,12 +93,33 @@ int object_exists(const ObjectID *id) {
 
 //
 // Returns 0 on success, -1 on error.
-int object_write(ObjectType type, const void *data, size_t len, ObjectID *id_out) {
-    // TODO: Implement
-    (void)type; (void)data; (void)len; (void)id_out;
-    return -1;
+
+// convert enum to string -> helper 
+const char *type_to_str(ObjectType type) {
+    switch (type) {
+        case OBJ_BLOB:   return "blob";
+        case OBJ_TREE:   return "tree";
+        case OBJ_COMMIT: return "commit";
+        default:         return NULL;
+    }
 }
 
+
+// helper function to write all the bytes 
+int write_all(int fd, const void *buf,size_t count){
+	const char *p = buf;
+	while(count>0){
+		sszie_t n = write(fd,p,count);
+		if(n<=0) return -1l
+		p+=nl
+		count-=n;
+	}
+	return 0;
+}
+
+int object_write(ObjectType type, const void *data, size_t len, ObjectID *id_out) {
+	const char *type_str = type_to_str(type);
+}
 // Read an object from the store.
 //
 // Steps:
@@ -121,8 +142,16 @@ int object_write(ObjectType type, const void *data, size_t len, ObjectID *id_out
 //
 // The caller is responsible for calling free(*data_out).
 // Returns 0 on success, -1 on error (file not found, corrupt, etc.).
-int object_read(const ObjectID *id, ObjectType *type_out, void **data_out, size_t *len_out) {
-    // TODO: Implement
-    (void)id; (void)type_out; (void)data_out; (void)len_out;
+
+
+static ObjectType str_to_type(const char *type_str) {
+    if (strcmp(type_str, "blob") == 0)   return OBJ_BLOB;
+    if (strcmp(type_str, "tree") == 0)   return OBJ_TREE;
+    if (strcmp(type_str, "commit") == 0) return OBJ_COMMIT;
     return -1;
 }
+
+int object_read(const ObjectID *id, ObjectType *type_out, void **data_out, size_t *len_out) {
+
+}
+
