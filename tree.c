@@ -15,6 +15,11 @@
 #include <string.h>
 #include <dirent.h>
 #include <sys/stat.h>
+#include "pes.h"
+#include "index.h"
+
+int object_write(ObjectType type, const void *data, size_t len, ObjectID *id_out);
+
 
 // ─── Mode Constants ─────────────────────────────────────────────────────────
 
@@ -129,9 +134,88 @@ int tree_serialize(const Tree *tree, void **data_out, size_t *len_out) {
 //   - object_write    : save that binary buffer to the store as OBJ_TREE
 //
 // Returns 0 on success, -1 on error.
+
+// Recursive Helper Function 
+static int build_tree(IndexEntry *entries, int count, ObjectID *id_out) {
+    Tree tree;
+    tree.count = 0;
+
+    for (int i = 0; i < count; ) {
+        char *path = entries[i].path;
+        char *slash = strchr(path, '/');
+
+        if (!slash) {
+            // ---- FILE ----
+            TreeEntry *te = &tree.entries[tree.count++];
+
+            te->mode = entries[i].mode;
+            strcpy(te->name, path);
+            te->hash = entries[i].hash;
+
+            i++;
+        } else {
+            // ---- DIRECTORY ----
+            char dirname[256];
+            size_t len = slash - path;
+
+            strncpy(dirname, path, len);
+            dirname[len] = '\0';
+
+            // Collect entries belonging to this directory
+            IndexEntry subentries[MAX_INDEX_ENTRIES];
+            int subcount = 0;
+
+            for (int j = i; j < count; j++) {
+                if (strncmp(entries[j].path, dirname, len) == 0 &&
+                    entries[j].path[len] == '/') {
+
+                    IndexEntry sub = entries[j];
+
+                    // Strip "dirname/"
+                    memmove(sub.path,
+                            sub.path + len + 1,
+                            strlen(sub.path) - len);
+
+                    subentries[subcount++] = sub;
+                }
+            }
+
+            // Recursive build
+            ObjectID sub_id;
+            if (build_tree(subentries, subcount, &sub_id) < 0)
+                return -1;
+
+            // Add directory entry
+            TreeEntry *te = &tree.entries[tree.count++];
+            te->mode = MODE_DIR;
+            strcpy(te->name, dirname);
+            te->hash = sub_id;
+
+            // Skip processed entries
+            while (i < count &&
+                   strncmp(entries[i].path, dirname, len) == 0 &&
+                   entries[i].path[len] == '/') {
+                i++;
+            }
+        }
+    }
+
+    // Serialize and write tree object
+    void *data = NULL;
+    size_t len = 0;
+
+    if (tree_serialize(&tree, &data, &len) < 0)
+        return -1;
+
+    int rc = object_write(OBJ_TREE, data, len, id_out);
+    free(data);
+
+    return rc;
+}
+
+
+
+
 int tree_from_index(ObjectID *id_out) {
-    // TODO: Implement recursive tree building
-    // (See Lab Appendix for logical steps)
-    (void)id_out;
-    return -1;
+
 }
